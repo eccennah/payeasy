@@ -60,7 +60,7 @@ export default function LoginPage() {
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
             Or{' '}
             <Link
-              href="/register"
+              href="/auth/register"
               className="font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
             >
               create a new account
