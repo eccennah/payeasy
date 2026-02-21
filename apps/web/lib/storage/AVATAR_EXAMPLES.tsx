@@ -268,9 +268,8 @@ export function AvatarDropZone() {
       onDragLeave={handleDrag}
       onDragOver={handleDrag}
       onDrop={handleDrop}
-      className={`border-2 border-dashed p-8 text-center transition-colors ${
-        dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
-      }`}
+      className={`border-2 border-dashed p-8 text-center transition-colors ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+        }`}
     >
       {loading ? (
         <p>Uploading...</p>
@@ -289,7 +288,7 @@ export function AvatarDropZone() {
 // Example 6: With Database Update
 // ============================================================================
 
-import { createClient } from '@/lib/superbase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export function AvatarUploadWithDbUpdate() {
   const { upload, loading } = useAvatarUpload();

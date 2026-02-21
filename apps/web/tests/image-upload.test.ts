@@ -3,7 +3,7 @@ import { POST } from '../app/api/listings/[id]/images/upload/route';
 import { DELETE } from '../app/api/listings/[id]/images/[imageId]/route';
 
 // Mock dependencies
-vi.mock('@/lib/superbase/server', () => ({
+vi.mock('@/lib/supabase/server', () => ({
     createClient: vi.fn(),
 }));
 
@@ -14,7 +14,7 @@ vi.mock('@/lib/image-upload/optimization', () => ({
     }),
 }));
 
-import { createClient } from '@/lib/superbase/server';
+import { createClient } from '@/lib/supabase/server';
 
 describe('Listing Image Upload & Deletion', () => {
     let mockSupabase: any;

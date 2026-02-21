@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/superbase/server';
+import { createClient } from '@/lib/supabase/server';
 import { validateImageFile, ALLOWED_TYPES, MAX_FILE_SIZE } from '@/lib/image-upload/validation';
 import { processImage } from '@/lib/image-upload/optimization';
 import { generateUniqueFilename } from '@/lib/image-upload/filename';

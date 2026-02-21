@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { POST } from './route';
 
 // Mock dependencies
-vi.mock('@/lib/superbase/server', () => ({
+vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(),
 }));
 
@@ -21,7 +21,7 @@ vi.mock('@/lib/api-utils', () => ({
   }),
 }));
 
-import { createClient } from '@/lib/superbase/server';
+import { createClient } from '@/lib/supabase/server';
 import { uploadAvatar } from '@/lib/storage/avatars';
 import { successResponse, errorResponse } from '@/lib/api-utils';
 
