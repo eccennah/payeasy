@@ -1,14 +1,24 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { RealtimeChannel, RealtimePostgresInsertPayload } from '@supabase/supabase-js'
+import type {
+  RealtimeChannel,
+  RealtimePostgresInsertPayload,
+  SupabaseClient,
+} from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { createBrowserClient } from '@/lib/supabase/client'
 import type { ConversationMessageRow } from '@/lib/types/database'
 
 const MAX_RECONNECT_ATTEMPTS = 5
 const RECONNECT_DELAY_MS = 1_500
 
-type ConnectionState = 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR'
+type ConnectionState =
+  | 'SUBSCRIBED'
+  | 'TIMED_OUT'
+  | 'CLOSED'
+  | 'CHANNEL_ERROR'
+  | 'CONNECTING'
 
 interface UseConversationRealtimeOptions {
   conversationId: string
@@ -25,6 +35,22 @@ interface TypingBroadcastPayload {
   userId: string
   conversationId: string
   isTyping: boolean
+}
+
+function createRealtimeClientSafely(): SupabaseClient {
+  try {
+    return createBrowserClient()
+  } catch {
+    return createClient('https://placeholder.supabase.co', 'placeholder')
+  }
+}
+
+function toConnectionState(status: string): ConnectionState {
+  if (status === 'SUBSCRIBED') return 'SUBSCRIBED'
+  if (status === 'TIMED_OUT') return 'TIMED_OUT'
+  if (status === 'CLOSED') return 'CLOSED'
+  if (status === 'CHANNEL_ERROR') return 'CHANNEL_ERROR'
+  return 'CONNECTING'
 }
 
 export function useConversationRealtime({
@@ -44,7 +70,7 @@ export function useConversationRealtime({
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const channelRef = useRef<RealtimeChannel | null>(null)
 
-  const supabase = useMemo(() => createBrowserClient(), [])
+  const supabase = useMemo(() => createRealtimeClientSafely(), [])
 
   const updateConnectionState = useCallback(
     (status: ConnectionState) => {
@@ -61,6 +87,7 @@ export function useConversationRealtime({
     }
 
     if (channelRef.current) {
+      await channelRef.current.unsubscribe()
       await supabase.removeChannel(channelRef.current)
       channelRef.current = null
     }
@@ -105,7 +132,8 @@ export function useConversationRealtime({
       }
 
       channel.subscribe((status, error) => {
-        updateConnectionState(status)
+        const connectionStatus = toConnectionState(status)
+        updateConnectionState(connectionStatus)
 
         if (status === 'SUBSCRIBED') {
           reconnectAttemptsRef.current = 0
