@@ -121,7 +121,7 @@ export default function FavoritesProvider({ children }: { children: React.ReactN
         togglingRef.current.delete(listingId)
       }
     },
-    [isAuthenticated, favoriteIds]
+    [isAuthenticated, favoriteIds, router]
   )
 
   return (
