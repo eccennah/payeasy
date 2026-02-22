@@ -39,7 +39,7 @@ const formatTime = (timestamp: string) => {
 }
 
 export default function ConversationDetailPage() {
-    const { id } = useParams<{ id: string }>()
+    const { id } = useParams() as { id: string }
     const [messages, setMessages] = useState<Message[]>([])
     const [currentUserId, setCurrentUserId] = useState<string>('')
     const [title, setTitle] = useState<string>('Conversation')
@@ -184,9 +184,9 @@ export default function ConversationDetailPage() {
                 previous.map((message) =>
                     message.id === optimisticMessage.id
                         ? {
-                              ...savedMessage,
-                              status: 'sent',
-                          }
+                            ...savedMessage,
+                            status: 'sent',
+                        }
                         : message,
                 ),
             )
@@ -195,9 +195,9 @@ export default function ConversationDetailPage() {
                 previous.map((message) =>
                     message.id === optimisticMessage.id
                         ? {
-                              ...message,
-                              status: 'failed',
-                          }
+                            ...message,
+                            status: 'failed',
+                        }
                         : message,
                 ),
             )
@@ -238,11 +238,10 @@ export default function ConversationDetailPage() {
                             return (
                                 <article
                                     key={message.id}
-                                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm sm:max-w-[75%] ${
-                                        isCurrentUser
+                                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm shadow-sm sm:max-w-[75%] ${isCurrentUser
                                             ? 'ml-auto bg-blue-600 text-white'
                                             : 'mr-auto bg-slate-700 text-slate-100'
-                                    }`}
+                                        }`}
                                 >
                                     {!isCurrentUser && message.senderName ? (
                                         <p className="mb-1 text-xs font-semibold text-slate-200">{message.senderName}</p>
@@ -255,10 +254,10 @@ export default function ConversationDetailPage() {
                                                 {message.status === 'sending'
                                                     ? 'Sending...'
                                                     : message.status === 'failed'
-                                                      ? 'Failed'
-                                                      : message.readAt
-                                                        ? 'Read'
-                                                        : 'Sent'}
+                                                        ? 'Failed'
+                                                        : message.readAt
+                                                            ? 'Read'
+                                                            : 'Sent'}
                                             </span>
                                         ) : null}
                                     </div>

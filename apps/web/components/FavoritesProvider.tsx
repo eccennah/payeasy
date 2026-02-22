@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/superbase/client'
 import { createClient } from '@/lib/supabase/client'
 
 type FavoritesContextValue = {

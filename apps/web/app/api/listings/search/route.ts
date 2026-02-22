@@ -24,24 +24,10 @@ export async function GET(request: NextRequest) {
 
       search: searchParams.get('search') || undefined,
       bbox: searchParams.get('bbox') || undefined,
-      sortBy: (searchParams.get('sortBy') as 'price' | 'created_at' | 'bedrooms' | 'bathrooms') || 'created_at',
+      sortBy: (searchParams.get('sortBy') as 'price' | 'created_at' | 'bedrooms' | 'bathrooms' | 'views' | 'favorites' | 'recommended') || 'created_at',
       order: (searchParams.get('order') as 'asc' | 'desc') || 'desc',
       page: searchParams.get('page') ? Number(searchParams.get('page')) : 1,
       limit: searchParams.get('limit') ? Number(searchParams.get('limit')) : 20,
-    }
-      search: searchParams.get("search") || undefined,
-      sortBy:
-        (searchParams.get("sortBy") as
-          | "price"
-          | "created_at"
-          | "bedrooms"
-          | "bathrooms"
-          | "views"
-          | "favorites"
-          | "recommended") || "created_at",
-      order: (searchParams.get("order") as "asc" | "desc") || "desc",
-      page: searchParams.get("page") ? Number(searchParams.get("page")) : 1,
-      limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : 20,
     };
 
     if (params.page! < 1) params.page = 1

@@ -94,6 +94,7 @@ export default function EditProfilePage() {
           {uploading && <div id="avatar-uploading" className="text-xs text-gray-400 mt-2" aria-live="polite">Uploading…</div>}
           {avatarUrl && (
             <div className="mt-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={avatarUrl} alt={`${user.username} avatar preview`} className="w-20 h-20 rounded-full object-cover" />
             </div>
           )}
