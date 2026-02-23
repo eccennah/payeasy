@@ -14,9 +14,16 @@ import ListingPopup from './ListingPopup'
 import type { ListingPopupData } from './ListingPopup'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-export interface MapListing extends ListingPopupData {
+export interface MapListing extends Partial<ListingPopupData> {
+    id: string
     latitude: number
     longitude: number
+    price: number
+    title?: string
+    location?: string
+    bedrooms?: number
+    bathrooms?: number
+    image?: string
 }
 
 interface ViewState {
@@ -201,7 +208,7 @@ export default function MapView({
     return (
         <MapGL
             ref={mapRef}
-            {...viewState}
+            initialViewState={viewState}
             onMove={handleMove}
             onLoad={handleLoad}
             mapboxAccessToken={MAPBOX_TOKEN}
@@ -287,7 +294,15 @@ export default function MapView({
                     className="[&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:border-t-white"
                 >
                     <ListingPopup
-                        listing={selectedListing}
+                        listing={{
+                            id: selectedListing.id,
+                            title: selectedListing.title || 'Untitled Listing',
+                            price: selectedListing.price,
+                            location: selectedListing.location || 'Unknown Location',
+                            bedrooms: selectedListing.bedrooms || 0,
+                            bathrooms: selectedListing.bathrooms || 0,
+                            image: selectedListing.image || '/images/airbnb1.jpg',
+                        }}
                         onClose={() => setSelectedListing(null)}
                     />
                 </Popup>

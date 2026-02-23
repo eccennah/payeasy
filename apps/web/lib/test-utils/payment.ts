@@ -59,8 +59,7 @@ export const PaymentFactory = {
             transaction_hash: faker.string.hexadecimal({ length: 64, prefix: '' }).toLowerCase(),
             status: 'pending',
             payment_period: `${year}-${month}`,
-            stellar_ledger: null as any,
-            confirmed_at: null as any,
+            stellar_ledger: null,
             ...overrides,
         };
     },

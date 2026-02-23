@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const listingId = params.id;
+    const { id: listingId } = await params;
     if (!listingId) {
       return NextResponse.json({ error: "Listing ID is required" }, { status: 400 });
     }

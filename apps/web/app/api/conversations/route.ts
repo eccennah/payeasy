@@ -51,59 +51,95 @@ export async function GET(request: NextRequest) {
       return errorResponse("Failed to load conversations.", 500, "INTERNAL_ERROR");
     }
 
-    // 4. Enrich each conversation with last message + participants
-    const previews: ConversationPreview[] = await Promise.all(
-      (conversations ?? []).map(async (conv) => {
-        // Last message (non-deleted)
-        const { data: lastMessages } = await supabase
-          .from("messages")
-          .select("content, sender_id, created_at")
-          .eq("conversation_id", conv.id)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1);
+    // 4. Batch-load last messages, participants, unread counts, and user profiles
+    const [
+      { data: lastMessages, error: lastMessageError },
+      { data: participants, error: participantError },
+      { data: unreadRows, error: unreadError },
+    ] = await Promise.all([
+      supabase
+        .from("conversation_last_messages")
+        .select("conversation_id, content, sender_id, created_at")
+        .in("conversation_id", conversationIds),
+      supabase
+        .from("conversation_participants")
+        .select("id, user_id, conversation_id")
+        .in("conversation_id", conversationIds),
+      supabase
+        .from("messages")
+        .select("conversation_id")
+        .in("conversation_id", conversationIds)
+        .neq("sender_id", userId)
+        .is("read_at", null)
+        .is("deleted_at", null),
+    ]);
 
-        // Unread count
-        const { count: unreadCount } = await supabase
-          .from("messages")
-          .select("*", { count: "exact", head: true })
-          .eq("conversation_id", conv.id)
-          .eq("read_at", null) // Assuming unread meant read_at is null but in prompt: read = false, wait, the schema says read_at is TIMESTAMPTZ, so read_at is null
-          .neq("sender_id", userId);
+    if (lastMessageError) {
+      console.error("Failed to fetch last messages:", lastMessageError);
+      return errorResponse("Failed to load conversations.", 500, "INTERNAL_ERROR");
+    }
 
-        // All participants with profiles
-        const { data: participants } = await supabase
-          .from("conversation_participants")
-          .select(`
-            id,
-            user_id,
-            users:user_id (username, avatar_url)
-          `)
-          .eq("conversation_id", conv.id);
+    if (participantError) {
+      console.error("Failed to fetch participants:", participantError);
+      return errorResponse("Failed to load conversations.", 500, "INTERNAL_ERROR");
+    }
 
-        const formattedParticipants = (participants ?? []).map((p: any) => ({
-          id: p.id,
-          user_id: p.user_id,
-          username: p.users?.username,
-          avatar_url: p.users?.avatar_url,
-        }));
+    // Build unread count map (count per conversation_id)
+    const unreadCountMap = new Map<string, number>();
+    (unreadRows ?? []).forEach((row) => {
+      unreadCountMap.set(row.conversation_id, (unreadCountMap.get(row.conversation_id) ?? 0) + 1);
+    });
 
-        const otherParticipant = formattedParticipants.find(p => p.user_id !== userId);
-
-        return {
-          id: conv.id,
-          created_at: conv.created_at,
-          updated_at: conv.updated_at,
-          last_message: lastMessages?.[0] ?? null,
-          participants: formattedParticipants,
-          unread_count: unreadCount ?? 0,
-          other_user: otherParticipant ? {
-            username: otherParticipant.username || 'Unknown User',
-            avatar_url: otherParticipant.avatar_url || '',
-          } : undefined,
-        };
-      })
+    const lastMessageMap = new Map(
+      (lastMessages ?? []).map((message) => [
+        message.conversation_id,
+        {
+          content: message.content,
+          sender_id: message.sender_id,
+          created_at: message.created_at,
+        },
+      ])
     );
+
+    // Build participants map and collect other-user IDs for profile lookup
+    const participantsMap = new Map<string, { id: string; user_id: string }[]>();
+    const otherUserIds = new Set<string>();
+    (participants ?? []).forEach((participant) => {
+      const list = participantsMap.get(participant.conversation_id) ?? [];
+      list.push({ id: participant.id, user_id: participant.user_id });
+      participantsMap.set(participant.conversation_id, list);
+      if (participant.user_id !== userId) {
+        otherUserIds.add(participant.user_id);
+      }
+    });
+
+    // Batch-load profiles for other participants
+    const profileMap = new Map<string, { username: string; avatar_url: string }>();
+    if (otherUserIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from("users")
+        .select("id, username, avatar_url")
+        .in("id", Array.from(otherUserIds));
+      (profiles ?? []).forEach((p) => {
+        profileMap.set(p.id, { username: p.username ?? "Unknown User", avatar_url: p.avatar_url ?? "" });
+      });
+    }
+
+    const previews: ConversationPreview[] = (conversations ?? []).map((conv) => {
+      const convParticipants = participantsMap.get(conv.id) ?? [];
+      const otherParticipant = convParticipants.find((p) => p.user_id !== userId);
+      const otherProfile = otherParticipant ? profileMap.get(otherParticipant.user_id) : undefined;
+
+      return {
+        id: conv.id,
+        created_at: conv.created_at,
+        updated_at: conv.updated_at,
+        last_message: lastMessageMap.get(conv.id) ?? null,
+        participants: convParticipants,
+        unread_count: unreadCountMap.get(conv.id) ?? 0,
+        other_user: otherProfile,
+      };
+    });
 
     return successResponse(previews);
   } catch (err) {

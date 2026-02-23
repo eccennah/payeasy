@@ -113,7 +113,7 @@ export default function LoginButton() {
                 err instanceof Error ? err.message : "An unexpected error occurred."
             );
         }
-    }, [isConnected, publicKey, connect]);
+    }, [isConnected, publicKey, connect, router]);
 
     const isLoading = !["idle", "success", "error"].includes(state);
 

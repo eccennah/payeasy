@@ -30,6 +30,7 @@
     "test": "echo \"No tests specified yet\"",
     "test:e2e": "npx playwright test --config=e2e/playwright.config.ts",
     "test:e2e:ui": "npx playwright test --config=e2e/playwright.config.ts --ui",
+    "test:all": "npm run build && npm run lint && cd apps/web && npm test && cd ../.. && npm run test:e2e",
     "install:web": "cd apps/web && npm install",
     "build:contract": "cd apps/web && npm run build:contract",
     "deploy:contract": "cd apps/web && npm run deploy:contract",
