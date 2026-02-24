@@ -1,13 +1,21 @@
-import { type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getUserId, successResponse, errorResponse } from "@/lib/api-utils";
-import { getServerClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
+import { userUpdateSchema } from "@/lib/types/validation";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+/**
+ * GET /api/users/[id]
+ *
+ * Supports lookup by UUID or by public_key (Stellar G...).
+ * Pass "me" to resolve the authenticated user.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const { id: idParam } = await params;
-
-    // Resolve user id: "me" -> auth cookie, otherwise the path param
-    const supabase = await getServerClient();
+    const supabase = await createClient();
 
     let targetId: string | null = null;
     if (idParam === "me") {
@@ -17,42 +25,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       targetId = idParam;
     }
 
-    // Fetch user row
+    // Support lookup by UUID or by Stellar public key
+    const isPublicKey = targetId.startsWith("G") && targetId.length === 56;
     const { data: user, error: userErr } = await supabase
       .from("users")
       .select("id,username,email,public_key,avatar_url,bio,created_at")
-      .eq("id", targetId)
+      .match(isPublicKey ? { public_key: targetId } : { id: targetId })
       .maybeSingle();
 
     if (userErr) return errorResponse(userErr.message, 400);
     if (!user) return errorResponse("User not found", 404);
 
-    // Count listings for the user (exclude deleted)
-    const { count, error: countErr } = await supabase
-      .from("listings")
-      .select("id", { count: "exact", head: true })
-      .eq("landlord_id", targetId)
-      .neq("status", "deleted");
-
-    const listingsCount = count ?? 0;
-
-    // If the request asked for "me" we already enforced auth via cookie.
-    // For public profiles (other users) we avoid returning email.
-    const requester = getUserId(request);
-    const isOwn = requester === targetId;
-
-    const payload = {
-      id: user.id,
-      username: user.username,
-      email: isOwn ? user.email : null,
-      public_key: user.public_key,
-      avatar_url: user.avatar_url,
-      bio: user.bio,
-      created_at: user.created_at,
-      listings_count: listingsCount,
-    };
-
-    return successResponse(payload);
+    return successResponse(user);
   } catch (err) {
     return errorResponse("Internal server error", 500);
   }
@@ -61,7 +45,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: idParam } = await params;
-    const supabase = await getServerClient();
+    const supabase = await createClient();
 
     let targetId: string | null = null;
     if (idParam === "me") {
@@ -71,7 +55,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       targetId = idParam;
     }
 
-    // Only the owner may update their profile (service role can bypass)
     const requester = getUserId(request);
     if (requester !== targetId) return errorResponse("Forbidden", 403);
 
@@ -104,5 +87,59 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return successResponse(updated);
   } catch (err) {
     return errorResponse("Internal server error", 500);
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const supabase = await createClient();
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (user.id !== id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const body = await request.json();
+
+    const validationResult = userUpdateSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: validationResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .update(validationResult.data)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to update user profile:", error);
+      return NextResponse.json(
+        { error: "Failed to update profile" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Unexpected error in PUT /api/users/[id]:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

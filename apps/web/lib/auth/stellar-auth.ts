@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { Keypair } from "stellar-sdk";
 
@@ -14,6 +13,24 @@ const JWT_EXPIRY = "24h";
 
 /** Prefix used to build the challenge message. */
 const MESSAGE_PREFIX = "PayEasy Login:";
+
+/**
+ * Generate random bytes using Web Crypto API (Edge Runtime compatible)
+ */
+function randomBytes(length: number): Uint8Array {
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    return array;
+}
+
+/**
+ * Convert Uint8Array to hex string
+ */
+function bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+}
 
 // ---------------------------------------------------------------------------
 // Challenge helpers
@@ -32,7 +49,7 @@ export interface Challenge {
  *   "PayEasy Login: <nonce>.<timestamp>"
  */
 export function generateChallenge(): Challenge {
-    const nonce = crypto.randomBytes(32).toString("hex");
+    const nonce = bytesToHex(randomBytes(32));
     const timestamp = Date.now();
     const message = `${MESSAGE_PREFIX} ${nonce}.${timestamp}`;
     return { nonce, timestamp, message };
@@ -61,6 +78,11 @@ export function verifySignature(
     message: string
 ): boolean {
     try {
+        // Validate inputs
+        if (!publicKey || !signature || !message) {
+            return false;
+        }
+        
         const keypair = Keypair.fromPublicKey(publicKey);
         const messageBuffer = Buffer.from(message, "utf-8");
         const signatureBuffer = Buffer.from(signature, "base64");
@@ -110,10 +132,54 @@ export function signJwt(publicKey: string): string {
  */
 export function verifyJwt(token: string): jwt.JwtPayload | null {
     try {
+        // Validate token is not empty
+        if (!token || typeof token !== "string") {
+            return null;
+        }
+
         const payload = jwt.verify(token, getJwtSecret());
-        if (typeof payload === "string") return null;
+        
+        // Verify payload is an object
+        if (typeof payload === "string") {
+            return null;
+        }
+
+        // Validate required fields in payload
+        if (!payload.sub || typeof payload.sub !== "string") {
+            return null;
+        }
+
+        // Validate the sub field is a valid Stellar public key format
+        if (!isValidStellarPublicKey(payload.sub)) {
+            return null;
+        }
+
+        // Validate timestamps if present
+        if (payload.iat && typeof payload.iat !== "number") {
+            return null;
+        }
+
+        if (payload.exp && typeof payload.exp !== "number") {
+            return null;
+        }
+
         return payload;
     } catch {
         return null;
     }
+}
+
+/**
+ * Validate that a string looks like a Stellar public key.
+ * This is a basic format check, not cryptographic validation.
+ */
+function isValidStellarPublicKey(key: string): boolean {
+    // Stellar public keys start with G and are 56 characters long
+    if (!key || typeof key !== "string") {
+        return false;
+    }
+
+    // Basic format: starts with G, 56 chars, alphanumeric
+    const stellarPublicKeyRegex = /^G[A-Z2-7]{55}$/;
+    return stellarPublicKeyRegex.test(key);
 }

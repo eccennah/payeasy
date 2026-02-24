@@ -1,88 +1,120 @@
+import { Request } from "next/server";
 import {
-    buildMessage,
-    isTimestampValid,
-    signJwt,
-    verifySignature,
+  buildMessage,
+  isTimestampValid,
+  signJwt,
+  verifySignature,
 } from "@/lib/auth/stellar-auth";
+import {
+  successResponse,
+  errorResponse,
+  handleError,
+} from "@/app/api/utils/response";
+import { logAuthEvent, AuthEventType } from "@/lib/security/authLogging";
 
-import { NextResponse } from "next/server";
-
-/** Cookie max-age in seconds (24 hours). */
-const COOKIE_MAX_AGE = 86_400;
+const COOKIE_MAX_AGE = 86_400; // 24 hours
 
 /**
  * POST /api/auth/verify
  *
  * Accepts `{ publicKey, signature, nonce, timestamp }`, verifies the Stellar
- * signature, and returns a JWT token stored in a secure HTTP-only cookie.
+ * signature, and returns a JWT stored in a secure HTTP-only cookie.
  */
-export async function POST (request: Request) {
-    try {
-        const body = await request.json();
-        const { publicKey, signature, nonce, timestamp } = body;
+export async function POST(request: Request) {
+  const requestId = request.headers.get("x-request-id") ?? undefined;
+  let publicKey: string | undefined;
 
-        // --- Input validation ------------------------------------------------
-
-        if (!publicKey || !signature || !nonce || timestamp == null) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: { message: "publicKey, signature, nonce, and timestamp are required" },
-                },
-                { status: 400 }
-            );
-        }
-
-        // --- Replay protection -----------------------------------------------
-
-        if (!isTimestampValid(timestamp)) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: { message: "Challenge expired. Please request a new login challenge." },
-                },
-                { status: 401 }
-            );
-        }
-
-        // --- Signature verification ------------------------------------------
-
-        const message = buildMessage(nonce, timestamp);
-        const isValid = verifySignature(publicKey, signature, message);
-
-        if (!isValid) {
-            return NextResponse.json(
-                {
-                    success: false,
-                    error: { message: "Invalid signature" },
-                },
-                { status: 401 }
-            );
-        }
-
-        // --- Issue JWT -------------------------------------------------------
-
-        const token = signJwt(publicKey);
-
-        const response = NextResponse.json({
-            success: true,
-            data: { publicKey, token },
-        });
-
-        // Set the JWT in a secure HTTP-only cookie
-        response.cookies.set("auth-token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            path: "/",
-            maxAge: COOKIE_MAX_AGE,
-        });
-
-        return response;
-    } catch {
-        return NextResponse.json(
-            { success: false, error: { message: "Internal server error" } },
-            { status: 500 }
-        );
+  try {
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return errorResponse("Invalid JSON body", 400);
     }
+
+    const { signature, nonce, timestamp } = body;
+    publicKey = body.publicKey;
+
+    // --- Required fields validation ---
+    if (!publicKey || !signature || !nonce || timestamp == null) {
+      await logAuthEvent(
+        {
+          publicKey,
+          eventType: AuthEventType.LOGIN_FAILURE,
+          status: "FAILURE",
+          failureReason: "Missing required fields",
+        },
+        request
+      );
+
+      return errorResponse(
+        "publicKey, signature, nonce, and timestamp are required",
+        400
+      );
+    }
+
+    // --- Replay protection ---
+    if (!isTimestampValid(timestamp)) {
+      await logAuthEvent(
+        {
+          publicKey,
+          eventType: AuthEventType.LOGIN_FAILURE,
+          status: "FAILURE",
+          failureReason: "Challenge expired",
+        },
+        request
+      );
+
+      return errorResponse("Challenge expired", 401);
+    }
+
+    // --- Signature verification ---
+    const message = buildMessage(nonce, timestamp);
+    if (!verifySignature(publicKey, signature, message)) {
+      await logAuthEvent(
+        {
+          publicKey,
+          eventType: AuthEventType.LOGIN_FAILURE,
+          status: "FAILURE",
+          failureReason: "Invalid signature",
+        },
+        request
+      );
+
+      return errorResponse("Invalid signature", 401);
+    }
+
+    // --- Issue JWT ---
+    const token = signJwt(publicKey);
+
+    await logAuthEvent(
+      {
+        publicKey,
+        eventType: AuthEventType.LOGIN_SUCCESS,
+        status: "SUCCESS",
+      },
+      request
+    );
+
+    const response = successResponse({ publicKey });
+    response.cookies.set("auth-token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: COOKIE_MAX_AGE,
+    });
+
+    return response;
+  } catch (err) {
+    await logAuthEvent(
+      {
+        publicKey,
+        eventType: AuthEventType.LOGIN_FAILURE,
+        status: "FAILURE",
+        failureReason: "Internal server error during verification",
+      },
+      request
+    );
+
+    return handleError(err, requestId);
+  }
 }

@@ -42,7 +42,7 @@ export type BuiltContractTransaction = {
   network: StellarNetworkName;
   networkPassphrase: string;
   rpcUrl: string;
-  feeStats?: SorobanRpc.GetFeeStatsResponse;
+  feeStats?: Record<string, unknown>;
 };
 
 export type SubmittedTransaction = {
@@ -196,14 +196,15 @@ export async function buildContractTransaction(
   const args = (params.args ?? []).map((arg) => toScValArgument(arg));
 
 
-  let feeStats: SorobanRpc.GetFeeStatsResponse | undefined;
+  let feeStats: Record<string, unknown> | undefined;
   try {
-    feeStats = await server.getFeeStats();
+    feeStats = await (server as unknown as { getFeeStats: () => Promise<Record<string, unknown>> }).getFeeStats();
   } catch (e) {
     console.warn("Failed to fetch fee stats, using default base fee", e);
   }
 
-  const baseFee = params.baseFee ?? (feeStats ? Number(feeStats.inclusionFee.mode) : Number(BASE_FEE));
+  const parsedFeeStats = feeStats as { inclusionFee?: { mode?: string } } | undefined;
+  const baseFee = params.baseFee ?? (parsedFeeStats?.inclusionFee?.mode ? Number(parsedFeeStats.inclusionFee.mode) : Number(BASE_FEE));
 
   const initialTransaction = new TransactionBuilder(account, {
     fee: baseFee.toString(),
@@ -214,8 +215,7 @@ export async function buildContractTransaction(
     .build();
 
   const simulation = await server.simulateTransaction(initialTransaction);
-  const simulationGasEstimate =
-    "minResourceFee" in simulation ? extractGasFromSimulation(simulation) : null;
+  const simulationGasEstimate = extractGasFromSimulation(simulation as any);
   const rpcGasEstimate = await estimateGasViaRpcMethod(rpcUrl, initialTransaction.toXDR());
 
   const gasStroops = rpcGasEstimate?.stroops ?? simulationGasEstimate?.stroops ?? 0;
@@ -252,13 +252,13 @@ export async function buildContractTransaction(
       .addOperation(contract.call(params.method, ...args))
       .setTimeout(params.timeoutSeconds ?? 60)
       .build();
-    
+
     // Note: Re-preparing or re-assembling might be needed if resource limits change, 
     // but usually, they are stable for the same call.
     if (typeof rpcWithAssembler.assembleTransaction === "function") {
-       preparedTransaction = rpcWithAssembler.assembleTransaction(preparedTransaction, simulation).build();
+      preparedTransaction = rpcWithAssembler.assembleTransaction(preparedTransaction, simulation).build();
     } else if (typeof prepareTransaction === "function") {
-       preparedTransaction = await prepareTransaction(preparedTransaction);
+      preparedTransaction = await prepareTransaction(preparedTransaction);
     }
   }
 
@@ -286,10 +286,9 @@ export async function signContractTransaction(
       return signed;
     }
 
-    // Cast signed to unknown to safely check properties on it
-    const signedObj = signed as unknown as Record<string, unknown>;
+    if (signed && typeof signed === "object") {
+      const signedObj = signed as unknown as Record<string, unknown>;
 
-    if (signedObj && typeof signedObj === "object") {
       if ("error" in signedObj && typeof signedObj.error === "string" && signedObj.error.length > 0) {
         throw new Error(signedObj.error);
       }

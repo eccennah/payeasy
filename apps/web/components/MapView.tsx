@@ -12,6 +12,8 @@ import Supercluster from 'supercluster'
 import debounce from 'lodash.debounce'
 import ListingPopup from './ListingPopup'
 import type { ListingPopupData } from './ListingPopup'
+import { trackEvent } from '@/lib/analytics/tracking'
+import { AnalyticsEventName } from '@/lib/analytics/events'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 export interface MapListing extends Partial<ListingPopupData> {
@@ -182,6 +184,11 @@ export default function MapView({
             zoom,
             duration: 500,
         })
+        trackEvent(AnalyticsEventName.BUTTON_CLICK, {
+            button_id: 'map_cluster',
+            text: `Zoomed into cluster with ${clusterId}`,
+            location: 'map_view',
+        })
     }
 
     if (!mounted) {
@@ -208,7 +215,7 @@ export default function MapView({
     return (
         <MapGL
             ref={mapRef}
-            {...viewState}
+            initialViewState={viewState}
             onMove={handleMove}
             onLoad={handleLoad}
             mapboxAccessToken={MAPBOX_TOKEN}
@@ -273,7 +280,14 @@ export default function MapView({
                                     ? 'bg-primary text-white scale-110'
                                     : 'bg-white text-primary border border-gray-200'
                                 }`}
-                            onClick={() => setSelectedListing(listing)}
+                            onClick={() => {
+                                setSelectedListing(listing)
+                                trackEvent(AnalyticsEventName.BUTTON_CLICK, {
+                                    button_id: `listing_marker_${listing.id}`,
+                                    text: `Viewed listing: ${listing.title}`,
+                                    location: 'map_view',
+                                })
+                            }}
                         >
                             {listing.price} XLM
                         </div>
@@ -294,7 +308,15 @@ export default function MapView({
                     className="[&_.mapboxgl-popup-content]:p-0 [&_.mapboxgl-popup-content]:bg-transparent [&_.mapboxgl-popup-content]:shadow-none [&_.mapboxgl-popup-tip]:border-t-white"
                 >
                     <ListingPopup
-                        listing={selectedListing}
+                        listing={{
+                            id: selectedListing.id,
+                            title: selectedListing.title || 'Untitled Listing',
+                            price: selectedListing.price,
+                            location: selectedListing.location || 'Unknown Location',
+                            bedrooms: selectedListing.bedrooms || 0,
+                            bathrooms: selectedListing.bathrooms || 0,
+                            image: selectedListing.image || '/images/airbnb1.jpg',
+                        }}
                         onClose={() => setSelectedListing(null)}
                     />
                 </Popup>

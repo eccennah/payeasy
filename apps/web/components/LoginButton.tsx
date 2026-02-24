@@ -16,14 +16,16 @@ type LoginState =
     | "requesting-challenge"
     | "signing"
     | "verifying"
+    | "connecting"
     | "success"
     | "error";
 
 const STATUS_LABELS: Record<LoginState, string> = {
     idle: "Sign in with Stellar",
-    "requesting-challenge": "Requesting challenge…",
-    signing: "Waiting for signature…",
-    verifying: "Verifying…",
+    connecting: "Connecting...",
+    "requesting-challenge": "Requesting challenge...",
+    signing: "Please sign in wallet...",
+    verifying: "Verifying signature...",
     success: "Signed in ✓",
     error: "Try again",
 };
@@ -105,6 +107,7 @@ export default function LoginButton() {
 
             // Optionally reload the page so protected routes become accessible
             setTimeout(() => router.refresh(), 1000);
+            setTimeout(() => window.location.reload(), 1000);
         } catch (err: unknown) {
             setState("error");
             setError(
