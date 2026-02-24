@@ -214,8 +214,7 @@ export async function buildContractTransaction(
     .build();
 
   const simulation = await server.simulateTransaction(initialTransaction);
-  const simulationGasEstimate =
-    "minResourceFee" in simulation ? extractGasFromSimulation(simulation) : null;
+  const simulationGasEstimate = extractGasFromSimulation(simulation as any);
   const rpcGasEstimate = await estimateGasViaRpcMethod(rpcUrl, initialTransaction.toXDR());
 
   const gasStroops = rpcGasEstimate?.stroops ?? simulationGasEstimate?.stroops ?? 0;
@@ -286,10 +285,9 @@ export async function signContractTransaction(
       return signed;
     }
 
-    // Cast signed to unknown to safely check properties on it
-    const signedObj = signed as unknown as Record<string, unknown>;
+    if (signed && typeof signed === "object") {
+      const signedObj = signed as unknown as Record<string, unknown>;
 
-    if (signedObj && typeof signedObj === "object") {
       if ("error" in signedObj && typeof signedObj.error === "string" && signedObj.error.length > 0) {
         throw new Error(signedObj.error);
       }

@@ -10,6 +10,8 @@ import dynamic from 'next/dynamic';
 
 const ComparisonBar = dynamic(() => import("@/components/ComparisonBar"), { ssr: false });
 
+import ComparisonBar from "@/components/ComparisonBar";
+import { Toaster } from 'react-hot-toast';
 import "./globals.css";
 import "@fontsource-variable/inter";
 
@@ -35,6 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </AuthProvider>
           </WalletProvider>
         </ServiceWorkerProvider>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   );
