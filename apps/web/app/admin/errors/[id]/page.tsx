@@ -7,6 +7,10 @@ export const dynamic = "force-dynamic";
 export default async function ErrorDetailPage({ params }: { params: { id: string } }) {
   const supabase = await getServerClient();
 
+  if (!supabase) {
+    notFound();
+  }
+
   // 1. Fetch the error group
   const { data: group, error: groupError } = await supabase
     .from("error_groups")
