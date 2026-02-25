@@ -17,7 +17,7 @@ function buildUserDetail(user: AdminUser): AdminUserDetail {
   const activityLog: ActivityEvent[] = [
     {
       id: `${user.id}-act-1`,
-      type: "auth",
+      type: "auth" as const,
       description: "User account created",
       created_at: user.created_at,
     },
