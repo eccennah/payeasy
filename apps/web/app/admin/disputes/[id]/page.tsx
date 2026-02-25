@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { createClient } from '@/lib/superbase/client'
+import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import {
     ShieldCheck,
@@ -37,6 +37,7 @@ export default function AdminDisputeDetailPage() {
     async function fetchDispute() {
         try {
             setLoading(true)
+            if (!params?.id) throw new Error('Dispute ID not found')
             const { data, error } = await supabase
                 .from('disputes')
                 .select(`
@@ -64,6 +65,7 @@ export default function AdminDisputeDetailPage() {
     const handleUpdate = async (status: string) => {
         setUpdating(true)
         try {
+            if (!params?.id) throw new Error('Dispute ID not found')
             const response = await fetch(`/api/disputes/${params.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
