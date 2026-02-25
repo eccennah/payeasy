@@ -8,6 +8,7 @@ import WalletProvider from "@/providers/WalletProvider";
 import AuthProvider from "@/providers/AuthProvider";
 import FavoritesProvider from "@/components/FavoritesProvider";
 import ComparisonProvider from "@/components/ComparisonProvider";
+import ComparisonBar from "@/components/ComparisonBar";
 import NotificationProvider from "@/providers/NotificationProvider";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { ToastProvider } from "@/contexts/ToastContext";
@@ -31,6 +32,32 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
+    <html lang="en">
+      <head>
+        {/* Preconnect to Google Fonts for faster load */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Plus Jakarta Sans — display/brand headings */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="min-h-screen bg-slate-950 text-white font-sans">
+        <NextTopLoader color="#7D00FF" showSpinner={false} />
+        <ServiceWorkerProvider>
+          <WalletProvider>
+            <AuthProvider>
+              <FavoritesProvider>
+                <ComparisonProvider>
+                  {children}
+                  <ComparisonBar />
+                </ComparisonProvider>
+              </FavoritesProvider>
+            </AuthProvider>
+          </WalletProvider>
+        </ServiceWorkerProvider>
+        <Toaster position="bottom-right" />
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-white font-sans text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-white">
         <ThemeProvider
