@@ -1,6 +1,9 @@
 import "../lib/env";
 import type { Metadata } from "next";
+<<<<<<< HEAD
 import { ThemeProvider } from "@/lib/theme/provider";
+=======
+>>>>>>> 02ac1b5 (feat: Implement client-side and server-side route protection with a new auth provider, protected route component, and middleware enhancements.)
 import { ServiceWorkerProvider } from "@/components/providers/ServiceWorkerProvider";
 import { ErrorProvider } from "@/components/providers/ErrorProvider";
 import NextTopLoader from "nextjs-toploader";
@@ -19,6 +22,8 @@ import Header from "@/components/Header";
 import Sidebar from "@/components/Sidebar";
 import "./globals.css";
 import "@fontsource-variable/inter";
+import { ThemeProvider } from "@/lib/theme/provider";
+import ProtectedRoute from "@/components/protectedRoute";
 
 // Dynamically import ComparisonBar to reduce initial bundle size
 const ComparisonBar = dynamic(() => import("@/components/ComparisonBar"), {
@@ -52,6 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           {/* Global error boundary - wraps everything inside ThemeProvider */}
           <ErrorProvider>
+            <ProtectedRoute>
             {/* Loading bar at the top */}
             <NextTopLoader color="#7D00FF" showSpinner={false} />
 
@@ -107,6 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
               }}
             />
+              </ProtectedRoute>
           </ErrorProvider>
         </ThemeProvider>
       </body>
