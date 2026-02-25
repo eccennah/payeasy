@@ -38,8 +38,15 @@ export default function SavedSearchesList({ onRerun }: SavedSearchesListProps) {
   const handleDelete = async (id: string) => {
     setDeletingId(id);
     try {
-      await fetch(`/api/saved-searches/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/saved-searches/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        // Optionally handle error (e.g., show a message); keep item in local state on failure.
+        return;
+      }
       setSearches((prev) => prev.filter((s) => s.id !== id));
+    } catch (error) {
+      // Optionally log error; keep item in local state on failure.
+      console.error("Failed to delete saved search", error);
     } finally {
       setDeletingId(null);
     }
