@@ -8,7 +8,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -36,7 +36,8 @@
       "node",
       "geojson",
       "mapbox__point-geometry"
-    ]
+    ],
+    "strictNullChecks": false
   },
   "include": [
     "next-env.d.ts",

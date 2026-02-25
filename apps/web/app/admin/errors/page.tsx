@@ -1,10 +1,15 @@
 import { getServerClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function ErrorListPage() {
   const supabase = await getServerClient();
+
+    if (!supabase) {
+      notFound();
+    }
 
   const { data: groups, error } = await supabase
     .from("error_groups")
