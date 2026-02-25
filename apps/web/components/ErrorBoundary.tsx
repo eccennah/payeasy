@@ -101,12 +101,17 @@ class ErrorBoundary extends Component<Props, State> {
             )}>
               {title}
             </h2>
+<<<<<<< HEAD
 
             <p className={cn(
               'text-lg leading-relaxed',
               'text-gray-700 dark:text-gray-300'
             )}>
               {description}
+=======
+            <p className="mb-6 text-gray-600 dark:text-gray-400">
+              {"We've been notified and are looking into it."}
+>>>>>>> 53c2fc1 (fix: update error message formatting in ErrorBoundary and adjust notification preference keys)
             </p>
 
             {/* Error details (development only) */}
