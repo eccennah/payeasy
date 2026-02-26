@@ -24,6 +24,8 @@ import "./globals.css";
 import "@fontsource-variable/inter";
 import { ThemeProvider } from "@/lib/theme/provider";
 import ProtectedRoute from "@/components/protectedRoute";
+import { ThemeProvider } from "@/lib/theme/provider";
+import ProtectedRoute from "@/components/protectedRoute";
 
 // Dynamically import ComparisonBar to reduce initial bundle size
 const ComparisonBar = dynamic(() => import("@/components/ComparisonBar"), {
@@ -58,8 +60,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {/* Global error boundary - wraps everything inside ThemeProvider */}
           <ErrorProvider>
             <ProtectedRoute>
+            <ProtectedRoute>
             {/* Loading bar at the top */}
             <NextTopLoader color="#7D00FF" showSpinner={false} />
+
 
             {/* Analytics tracking */}
             <AnalyticsTracker />
@@ -113,6 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 },
               }}
             />
+              </ProtectedRoute>
               </ProtectedRoute>
           </ErrorProvider>
         </ThemeProvider>
