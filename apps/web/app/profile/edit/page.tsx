@@ -1,12 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import EditProfileForm from "@/components/profile/EditProfileForm";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import useAuth from "@/lib/hooks/useAuth";
-import { createBrowserClient } from "@/lib/supabase/client";
+
 export default async function EditProfilePage() {
   const supabase = await createClient();
 
@@ -18,6 +14,9 @@ export default async function EditProfilePage() {
   if (authError || !authUser) {
     redirect("/auth/login");
   }
+
+  const uploading = false; // Replace with actual uploading state
+  const saving = false; // Replace with actual saving state
 
   const { data: user, error: userError } = await supabase
     .from("users")
@@ -34,23 +33,37 @@ export default async function EditProfilePage() {
     );
   }
 
+  const { username, email, bio, avatar_url: avatarUrl } = user;
+  const handleSave = async (updatedData: { username: string; email: string; bio: string; avatarUrl: string | null }) => {
+    // Implement profile update logic here, e.g. call an API route to update the user profile in the database
+    console.log("Saving profile with data:", updatedData);
+  }
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Implement file upload logic here, e.g. upload to Supabase Storage and get the public URL
+    console.log("Selected file for avatar:", file);
+  }
+
   return (
     <main className="p-6 max-w-3xl mx-auto">
       <h1 id="edit-profile-heading" className="text-2xl font-semibold mb-4">Edit Profile</h1>
-      <form onSubmit={handleSave} aria-labelledby="edit-profile-heading" className="grid gap-4 md:grid-cols-2">
+      <form onSubmit={()=>handleSave({ username, email, bio, avatarUrl })} aria-labelledby="edit-profile-heading" className="grid gap-4 md:grid-cols-2">
+      <form onSubmit={()=>handleSave({ username, email, bio, avatarUrl })} aria-labelledby="edit-profile-heading" className="grid gap-4 md:grid-cols-2">
         <label className="block md:col-span-1">
           <div className="text-sm text-gray-300">Username</div>
-          <input id="username" value={username} onChange={(e) => setUsername(e.target.value)} className="mt-1 w-full rounded-md px-3 py-2 bg-gray-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <input id="username" value={username} className="mt-1 w-full rounded-md px-3 py-2 bg-gray-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </label>
 
         <label className="block md:col-span-1">
           <div className="text-sm text-gray-300">Email</div>
-          <input id="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full rounded-md px-3 py-2 bg-gray-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <input id="email" value={email} className="mt-1 w-full rounded-md px-3 py-2 bg-gray-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </label>
 
         <label className="block md:col-span-2">
           <div className="text-sm text-gray-300">Bio</div>
-          <textarea id="bio" value={bio} onChange={(e) => setBio(e.target.value)} className="mt-1 w-full rounded-md px-3 py-2 bg-gray-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <textarea id="bio" value={bio} className="mt-1 w-full rounded-md px-3 py-2 bg-gray-800 border border-white/10 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </label>
 
         <label className="block md:col-span-2">
@@ -72,10 +85,9 @@ export default async function EditProfilePage() {
 
         <div className="flex items-center gap-3 md:col-span-2">
           <button type="submit" disabled={saving} className="rounded-xl px-4 py-2 bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">{saving ? 'Saving...' : 'Save'}</button>
-          <button type="button" onClick={() => router.back()} className="rounded-xl px-4 py-2 border border-white/10">Cancel</button>
+          <button type="button" className="rounded-xl px-4 py-2 border border-white/10">Cancel</button>
         </div>
       </form>
-    </main>
     <div className="container mx-auto px-4 py-8 md:py-12 max-w-4xl">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Edit Profile</h1>
@@ -86,5 +98,7 @@ export default async function EditProfilePage() {
 
       <EditProfileForm user={user} />
     </div>
+    </main>
+    </main>
   );
 }
