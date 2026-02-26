@@ -7,10 +7,10 @@
 'use client'
 
 import React from 'react'
-import { Volume2, VolumeX, Mail, MailOff, X } from 'lucide-react'
+import { Volume2, VolumeX, Mail, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useNotifications } from '@/hooks/useNotifications'
-import type { NotificationPreferences } from '@/lib/types/database'
+import { type NotificationPreferences } from '@/lib/types/database'
 
 interface NotificationPreferencesPanelProps {
   onClose?: () => void
@@ -65,11 +65,11 @@ const CATEGORIES: Array<{
   icon: string
   description: string
 }> = [
-  { key: 'message_enabled', label: 'Messages', icon: '💬', description: 'New message notifications' },
-  { key: 'payment_enabled', label: 'Payments', icon: '💸', description: 'Payment updates' },
-  { key: 'listing_enabled', label: 'Listings', icon: '🏠', description: 'Listing activity' },
-  { key: 'agreement_enabled', label: 'Agreements', icon: '📋', description: 'Rent agreement updates' },
-  { key: 'favorite_enabled', label: 'Favorites', icon: '❤️', description: 'Saved listing activity' },
+  { key: 'messages_enabled', label: 'Messages', icon: '💬', description: 'New message notifications' },
+  { key: "payments_enabled", label: 'Payments', icon: '💸', description: 'Payment updates' },
+  { key: 'listings_enabled', label: 'Listings', icon: '🏠', description: 'Listing activity' },
+  { key: 'agreements_enabled', label: 'Agreements', icon: '📋', description: 'Rent agreement updates' },
+  { key: 'favorites_enabled', label: 'Favorites', icon: '❤️', description: 'Saved listing activity' },
   { key: 'system_enabled', label: 'System', icon: '🔔', description: 'App & account alerts' },
 ]
 
@@ -155,7 +155,7 @@ export function NotificationPreferencesPanel({ onClose }: NotificationPreference
             {preferences.email_enabled ? (
               <Mail className="h-4 w-4 text-slate-400" />
             ) : (
-              <MailOff className="h-4 w-4 text-slate-500" />
+              <Mail className="h-4 w-4 text-slate-500" />
             )}
             <div>
               <p className="text-sm font-medium text-slate-200">Email digest</p>

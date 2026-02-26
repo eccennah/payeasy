@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { createClient } from '@/lib/superbase/client'
+import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import {
     ShieldAlert,
@@ -32,6 +32,11 @@ export default function DisputeDetailPage() {
     async function fetchDispute() {
         try {
             setLoading(true)
+            if (!params?.id) {
+                setError('Dispute ID not found')
+                setLoading(false)
+                return
+            }
             const { data, error } = await supabase
                 .from('disputes')
                 .select(`
@@ -42,7 +47,7 @@ export default function DisputeDetailPage() {
             listings (title)
           )
         `)
-                .eq('id', params.id)
+                .eq('id', params.id as string)
                 .single()
 
             if (error) throw error
